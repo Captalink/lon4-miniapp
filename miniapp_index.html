@@ -262,7 +262,7 @@
 
       const lastBal = allTrades.length > 0 && allTrades[allTrades.length - 1].balance != null
         ? Number(allTrades[allTrades.length - 1].balance)
-        : 7.89;
+        : (Number(st.current_balance || 0) > 0 ? Number(st.current_balance) : (Number(st.peak_balance || 0) > 0 ? Number(st.peak_balance) : 7.89));
       const peak = Math.max(Number(st.peak_balance || 0), lastBal);
       const dd = peak > 0 ? Math.max(0, ((peak - lastBal) / peak) * 100) : 0;
 
@@ -305,16 +305,23 @@
     }
 
     async function loadData() {
-      try {
-        const resp = await fetch("/api/state", { cache: "no-store" });
-        if (resp.ok) {
-          currentState = await resp.json();
-          document.getElementById("statusSub").textContent = "Онлайн · Данные из lon_p2_state.json";
-          render();
-          return;
-        }
-      } catch (e) {}
-      document.getElementById("statusSub").textContent = "Демо-режим (откройте через бота для живых данных)";
+      const urls = [
+        "https://raw.githubusercontent.com/Captalink/lon4-miniapp/main/state.json?t=" + Date.now(),
+        "./state.json?t=" + Date.now(),
+        "/api/state"
+      ];
+      for (const u of urls) {
+        try {
+          const resp = await fetch(u, { cache: "no-store" });
+          if (resp.ok) {
+            currentState = await resp.json();
+            document.getElementById("statusSub").textContent = "Онлайн · Реальные данные бота";
+            render();
+            return;
+          }
+        } catch (e) {}
+      }
+      document.getElementById("statusSub").textContent = "Демо-режим (ожидание первой синхронизации)";
       render();
     }
 
