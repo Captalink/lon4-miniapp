@@ -2,8 +2,25 @@
   "current_balance": 7.89,
   "peak_balance": 7.89,
   "stats_date": "2026-11-25",
-  "wins": 0,
+  "wins": 1,
   "losses": 0,
   "draws": 0,
-  "trades": []
+  "trades": [
+    {
+      "ts_msk": "2026-11-25 13:18:49",
+      "pair": "EUR/CHF",
+      "engine": "M3_FADE",
+      "grade": "A",
+      "tf_min": 3,
+      "exp_min": 6,
+      "direction": "CALL",
+      "entry": 0.9113,
+      "exit": 0.91148,
+      "outcome": "WIN",
+      "payout": 80.0,
+      "stake": 1.0,
+      "pnl": 0.8,
+      "balance": 7.89
+    }
+  ]
 }
