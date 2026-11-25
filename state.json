@@ -2,7 +2,7 @@
   "current_balance": 7.89,
   "peak_balance": 7.89,
   "stats_date": "2026-11-25",
-  "wins": 1,
+  "wins": 2,
   "losses": 0,
   "draws": 0,
   "trades": [
@@ -20,6 +20,22 @@
       "payout": 80.0,
       "stake": 1.0,
       "pnl": 0.8,
+      "balance": 7.89
+    },
+    {
+      "ts_msk": "2026-11-25 13:27:10",
+      "pair": "USD/CHF",
+      "engine": "M15_FADE",
+      "grade": "A",
+      "tf_min": 15,
+      "exp_min": 10,
+      "direction": "CALL",
+      "entry": 0.83246,
+      "exit": 0.83304,
+      "outcome": "WIN",
+      "payout": 85.0,
+      "stake": 1.0,
+      "pnl": 0.85,
       "balance": 7.89
     }
   ]
