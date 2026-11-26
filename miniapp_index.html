@@ -2,337 +2,1260 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>LON P2 v4 — История сделок и баланс</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>LON P2 · Terminal</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root {
-      --bg: #050b14;
-      --surface: #0b1526;
-      --border: rgba(56, 189, 248, 0.16);
-      --text: #e6f1ff;
-      --muted: #7da0c4;
-      --cyan: #38bdf8;
-      --glow: rgba(56, 189, 248, 0.22);
-      --win: #10b981;
-      --loss: #f43f5e;
-      --draw: #94a3b8;
+      --bg: #000000;
+      --glass: rgba(18, 18, 22, 0.74);
+      --glass-strong: rgba(24, 24, 30, 0.86);
+      --glass-hover: rgba(34, 34, 42, 0.9);
+      --border: rgba(255, 255, 255, 0.09);
+      --border-top: rgba(255, 255, 255, 0.16);
+      --text: #f5f5f7;
+      --muted: #8e8e93;
+      --subtle: #545458;
+      --green: #30d158;
+      --green-bg: rgba(48, 209, 88, 0.14);
+      --red: #ff453a;
+      --red-bg: rgba(255, 69, 58, 0.14);
+      --blue: #0a84ff;
+      --blue-bg: rgba(10, 132, 255, 0.16);
+      --amber: #ffd60a;
+      --radius-xl: 22px;
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
-      background: radial-gradient(circle at top right, #0c2340 0%, var(--bg) 58%);
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
       color: var(--text);
+      font-family: var(--font);
+      font-variant-numeric: tabular-nums;
+      -webkit-font-smoothing: antialiased;
       min-height: 100vh;
-      padding: 14px 14px 28px;
+      overflow-x: hidden;
     }
-    .wrap { max-width: 560px; margin: 0 auto; }
-    .top {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 14px; gap: 10px;
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(circle at 18% -8%, rgba(255, 255, 255, 0.06), transparent 42%),
+        radial-gradient(circle at 85% 12%, rgba(10, 132, 255, 0.05), transparent 38%);
+      pointer-events: none;
+      z-index: 0;
     }
-    .brand { display: flex; align-items: center; gap: 10px; }
-    .dot {
-      width: 10px; height: 10px; border-radius: 50%;
-      background: var(--cyan); box-shadow: 0 0 12px var(--cyan);
+
+    .app {
+      position: relative;
+      z-index: 1;
+      max-width: 560px;
+      margin: 0 auto;
+      padding: calc(14px + env(safe-area-inset-top)) 14px calc(96px + env(safe-area-inset-bottom));
     }
-    .title { font-size: 16px; font-weight: 700; letter-spacing: 0.3px; }
-    .sub { font-size: 11px; color: var(--muted); }
-    .btn {
-      background: linear-gradient(135deg, #0ea5e9, #2563eb);
-      color: #fff; border: none; border-radius: 10px;
-      padding: 8px 12px; font-size: 12px; font-weight: 600;
-      cursor: pointer; box-shadow: 0 4px 16px var(--glow);
-    }
-    .card {
-      background: linear-gradient(180deg, rgba(15, 30, 54, 0.9), rgba(11, 21, 38, 0.95));
+
+    .glass {
+      background: var(--glass);
+      backdrop-filter: blur(26px) saturate(180%);
+      -webkit-backdrop-filter: blur(26px) saturate(180%);
       border: 1px solid var(--border);
-      border-radius: 16px;
+      border-top-color: var(--border-top);
+      box-shadow: 0 14px 38px rgba(0, 0, 0, 0.78), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      border-radius: var(--radius-xl);
+    }
+
+    /* Header */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 11px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.03));
+      border: 1px solid var(--border-top);
+      display: grid;
+      place-items: center;
+    }
+
+    .brand-title {
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+    }
+
+    .brand-sub {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+    }
+
+    /* Apple Buttons */
+    .apple-btn {
+      appearance: none;
+      border: 1px solid var(--border-top);
+      background: linear-gradient(180deg, rgba(44, 44, 52, 0.85), rgba(22, 22, 27, 0.92));
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 12.5px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      padding: 9px 14px;
+      border-radius: 13px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      cursor: pointer;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+      transition: transform 0.14s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.15s ease;
+    }
+
+    .apple-btn:active {
+      transform: scale(0.955);
+      background: rgba(52, 52, 60, 0.95);
+    }
+
+    .apple-btn.primary {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(226, 226, 232, 0.92));
+      color: #000000;
+      border-color: rgba(255, 255, 255, 0.6);
+      box-shadow: 0 6px 20px rgba(255, 255, 255, 0.14);
+    }
+
+    .apple-btn.primary:active {
+      background: rgba(210, 210, 218, 0.95);
+    }
+
+    /* Hero Balance Card */
+    .hero {
+      padding: 18px;
+      margin-bottom: 12px;
+    }
+
+    .hero-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 14px;
+    }
+
+    .hero-label {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .hero-balance {
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-top: 3px;
+      line-height: 1.05;
+    }
+
+    .hero-peak {
+      text-align: right;
+      font-size: 11.5px;
+      color: var(--muted);
+    }
+
+    .hero-peak strong {
+      display: block;
+      color: var(--text);
+      font-size: 13.5px;
+      margin-top: 2px;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .metric-box {
+      background: rgba(255, 255, 255, 0.035);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: var(--radius-md);
+      padding: 9px 10px;
+    }
+
+    .metric-k {
+      font-size: 10.5px;
+      color: var(--muted);
+      margin-bottom: 3px;
+    }
+
+    .metric-v {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .c-green { color: var(--green); }
+    .c-red { color: var(--red); }
+    .c-amber { color: var(--amber); }
+
+    /* Equity SVG */
+    .equity-wrap {
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .equity-head {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    /* Active Open Trade */
+    .open-card {
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      border-color: rgba(10, 132, 255, 0.35);
+      background: linear-gradient(180deg, rgba(16, 26, 44, 0.8), rgba(14, 14, 18, 0.86));
+    }
+
+    .open-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .timer-pill {
+      background: var(--blue-bg);
+      color: #64b5ff;
+      border: 1px solid rgba(10, 132, 255, 0.35);
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* Segmented Filter */
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 16px 2px 10px;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+
+    .seg-bar {
+      display: inline-flex;
+      background: rgba(20, 20, 25, 0.85);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 3px;
+      gap: 2px;
+    }
+
+    .seg-btn {
+      appearance: none;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-family: var(--font);
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 5px 10px;
+      border-radius: 9px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .seg-btn.active {
+      background: rgba(255, 255, 255, 0.13);
+      color: var(--text);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+    }
+
+    /* Trade Card + Mini TV Chart */
+    .trade-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .trade-card {
       padding: 14px;
-      margin-bottom: 12px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+      transition: transform 0.15s ease;
     }
-    .bal-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
-    .bal-lbl { font-size: 12px; color: var(--muted); }
-    .bal-val { font-size: 26px; font-weight: 800; color: #fff; }
-    .bal-meta { font-size: 12px; color: var(--cyan); font-weight: 600; }
-    canvas {
-      width: 100%; height: 150px; display: block;
-      border-radius: 10px; background: rgba(5, 11, 20, 0.65);
+
+    .trade-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
     }
-    .kpis {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
-      margin-bottom: 12px;
+
+    .pair-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
     }
-    .kpi {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 12px; padding: 10px; text-align: center;
+
+    .pair-name {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
     }
-    .kpi-v { font-size: 16px; font-weight: 700; color: var(--cyan); }
-    .kpi-l { font-size: 11px; color: var(--muted); margin-top: 2px; }
-    .filters {
-      display: flex; gap: 6px; margin-bottom: 10px; overflow-x: auto; padding-bottom: 2px;
-    }
-    .chip {
-      background: var(--surface); color: var(--muted);
-      border: 1px solid var(--border); border-radius: 999px;
-      padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer;
-      white-space: nowrap;
-    }
-    .chip.active {
-      background: rgba(56, 189, 248, 0.16);
-      color: var(--cyan); border-color: var(--cyan);
-    }
-    .list { display: flex; flex-direction: column; gap: 8px; }
-    .item {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 12px; padding: 11px 12px;
-      display: flex; justify-content: space-between; align-items: center; gap: 10px;
-    }
-    .item-left { display: flex; flex-direction: column; gap: 3px; }
-    .pair-line { font-size: 14px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 6px; }
-    .tag {
-      font-size: 10px; padding: 2px 6px; border-radius: 6px;
-      background: rgba(56, 189, 248, 0.14); color: var(--cyan); font-weight: 700;
-    }
-    .meta-line { font-size: 11px; color: var(--muted); }
-    .item-right { text-align: right; display: flex; flex-direction: column; gap: 3px; }
+
     .badge {
-      font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 8px; display: inline-block;
+      font-size: 10.5px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 7px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
     }
-    .WIN { background: rgba(16, 185, 129, 0.16); color: var(--win); }
-    .LOSS { background: rgba(244, 63, 94, 0.16); color: var(--loss); }
-    .DRAW { background: rgba(148, 163, 184, 0.16); color: var(--draw); }
-    .bal-after { font-size: 12px; font-weight: 700; color: var(--text); }
-    .empty { text-align: center; color: var(--muted); padding: 24px 10px; font-size: 13px; }
+
+    .badge-call { background: var(--green-bg); color: var(--green); }
+    .badge-put { background: var(--red-bg); color: var(--red); }
+    .badge-eng { background: rgba(255,255,255,0.07); color: var(--muted); }
+    .badge-win { background: var(--green-bg); color: var(--green); border: 1px solid rgba(48,209,88,0.28); }
+    .badge-loss { background: var(--red-bg); color: var(--red); border: 1px solid rgba(255,69,58,0.28); }
+
+    .pnl-box {
+      text-align: right;
+    }
+
+    .pnl-val {
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .pips-val {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .tv-chart-box {
+      margin: 10px 0;
+      background: rgba(6, 6, 9, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 13px;
+      padding: 8px 8px 6px;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .tv-chart-caption {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: var(--muted);
+      margin-bottom: 4px;
+      padding: 0 2px;
+    }
+
+    .trade-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--muted);
+      padding-top: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .ind-pills {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .ind-pill {
+      background: rgba(255, 255, 255, 0.04);
+      padding: 2px 7px;
+      border-radius: 6px;
+      font-size: 10.5px;
+      color: #c7c7cc;
+    }
+
+    /* OTC Directory */
+    .search-box {
+      position: relative;
+      margin-bottom: 12px;
+    }
+
+    .search-input {
+      width: 100%;
+      background: var(--glass-strong);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border-top);
+      border-radius: 14px;
+      padding: 11px 14px 11px 38px;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 14px;
+      outline: none;
+    }
+
+    .search-input::placeholder {
+      color: var(--muted);
+    }
+
+    .search-ico {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      pointer-events: none;
+    }
+
+    .otc-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .otc-item {
+      padding: 12px 13px;
+      border-radius: var(--radius-lg);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .otc-pair {
+      font-size: 13.5px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+
+    .otc-tag {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .otc-pay {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--green);
+      background: var(--green-bg);
+      padding: 3px 7px;
+      border-radius: 7px;
+    }
+
+    .otc-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.22);
+    }
+
+    /* Bottom Apple Frosted Tab Bar */
+    .bottom-dock-wrap {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 50;
+      padding: 8px 16px calc(12px + env(safe-area-inset-bottom));
+      background: linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,0.88) 45%, #000000 100%);
+      pointer-events: none;
+    }
+
+    .bottom-dock {
+      pointer-events: auto;
+      max-width: 340px;
+      margin: 0 auto;
+      background: rgba(22, 22, 28, 0.82);
+      backdrop-filter: blur(30px) saturate(200%);
+      -webkit-backdrop-filter: blur(30px) saturate(200%);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 20px;
+      padding: 4px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    }
+
+    .dock-tab {
+      appearance: none;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 10px 12px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      cursor: pointer;
+      transition: all 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .dock-tab.active {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.08));
+      color: var(--text);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    }
+
+    .dock-tab:active {
+      transform: scale(0.96);
+    }
+
+    .view { display: none; }
+    .view.active { display: block; }
+
+    /* Modal Zoom for Candle Chart */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.82);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-card {
+      width: 100%;
+      max-width: 520px;
+      padding: 18px;
+    }
+
+    .toast {
+      position: fixed;
+      top: calc(16px + env(safe-area-inset-top));
+      left: 50%;
+      transform: translateX(-50%) translateY(-80px);
+      background: rgba(32, 32, 38, 0.94);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: var(--text);
+      font-size: 12.5px;
+      font-weight: 600;
+      padding: 10px 16px;
+      border-radius: 999px;
+      z-index: 200;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+      transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 36px 16px;
+      color: var(--muted);
+      font-size: 13px;
+    }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="top">
+  <div id="toast" class="toast">Файл выгружен</div>
+
+  <div class="app">
+    <!-- Top Header -->
+    <div class="topbar">
       <div class="brand">
-        <div class="dot"></div>
+        <div class="brand-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f5f5f7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
+            <polyline points="16 7 22 7 22 13"></polyline>
+          </svg>
+        </div>
         <div>
-          <div class="title">LON P2 v4 · Mini App</div>
-          <div class="sub" id="statusSub">Сессия 11:00–14:59 МСК · Схема #9</div>
+          <div class="brand-title">LON P2 · Terminal</div>
+          <div class="brand-sub">
+            <span class="dot"></span>
+            <span id="syncStatus">TV + PO Sync</span>
+          </div>
         </div>
       </div>
-      <button class="btn" onclick="loadData()">Обновить</button>
+
+      <button class="apple-btn primary" onclick="exportMonthlyData()" title="Скачать файл статистики за 30 дней">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        <span>Выгрузить месяц</span>
+      </button>
     </div>
 
-    <div class="card">
-      <div class="bal-row">
-        <div>
-          <div class="bal-lbl">Текущий баланс</div>
-          <div class="bal-val" id="curBalance">$7.89</div>
+    <!-- VIEW 1: FOREX -->
+    <div id="view-forex" class="view active">
+      <div class="glass hero">
+        <div class="hero-top">
+          <div>
+            <div class="hero-label">Текущий баланс</div>
+            <div class="hero-balance" id="balVal">$0.00</div>
+          </div>
+          <div class="hero-peak">
+            Пик баланса
+            <strong id="peakVal">$0.00</strong>
+            <span id="ddVal">DD: 0.0%</span>
+          </div>
         </div>
-        <div class="bal-meta" id="peakInfo">Пик: $7.89 · DD: 0.0%</div>
+
+        <div class="metrics-grid">
+          <div class="metric-box">
+            <div class="metric-k">Винрейт (30д)</div>
+            <div class="metric-v c-green" id="wr30Val">0.0%</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-k">Сделок (30д)</div>
+            <div class="metric-v" id="cnt30Val">0</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-k">День W/L</div>
+            <div class="metric-v" id="dayWlVal">0 / 0</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-k">Чистый PnL</div>
+            <div class="metric-v" id="pnl30Val">$0.00</div>
+          </div>
+        </div>
+
+        <div class="equity-wrap">
+          <div class="equity-head">
+            <span>Кривая баланса (месяц)</span>
+            <span id="equityRange">30 дней</span>
+          </div>
+          <div id="equitySvgBox"></div>
+        </div>
       </div>
-      <canvas id="eqChart" width="520" height="150"></canvas>
+
+      <!-- Active Trades Container -->
+      <div id="openTradesBox"></div>
+
+      <!-- History Header & Filters -->
+      <div class="section-head">
+        <div class="section-title">Сделки и свечи TV</div>
+        <div class="seg-bar">
+          <button class="seg-btn active" data-filter="ALL" onclick="setFilter('ALL', this)">Все</button>
+          <button class="seg-btn" data-filter="WIN" onclick="setFilter('WIN', this)">WIN</button>
+          <button class="seg-btn" data-filter="LOSS" onclick="setFilter('LOSS', this)">LOSS</button>
+          <button class="seg-btn" data-filter="M5" onclick="setFilter('M5', this)">M5</button>
+        </div>
+      </div>
+
+      <div id="tradeList" class="trade-list"></div>
+
+      <div style="text-align:center; margin-top: 14px;">
+        <button id="loadMoreBtn" class="apple-btn" style="display:none;" onclick="loadMoreTrades()">Показать ещё сделки</button>
+      </div>
     </div>
 
-    <div class="kpis">
-      <div class="kpi">
-        <div class="kpi-v" id="winrateVal">0.0%</div>
-        <div class="kpi-l">Винрейт</div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-v" id="wldVal">0 / 0 / 0</div>
-        <div class="kpi-l">W / L / D</div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-v" id="tradesCountVal">0</div>
-        <div class="kpi-l">Сделок в списке</div>
-      </div>
-    </div>
+    <!-- VIEW 2: OTC -->
+    <div id="view-otc" class="view">
+      <div class="glass" style="padding: 16px; margin-bottom: 12px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <div>
+            <div style="font-size:16px; font-weight:700; letter-spacing:-0.02em;">Pocket Option · OTC</div>
+            <div style="font-size:11.5px; color:var(--muted); margin-top:2px;">Перечень внебиржевых активов брокера</div>
+          </div>
+          <span class="badge badge-eng" id="otcCountBadge">36 пар</span>
+        </div>
 
-    <div class="filters">
-      <button class="chip active" data-eng="ALL" onclick="setFilter('ALL', this)">Все</button>
-      <button class="chip" data-eng="M3" onclick="setFilter('M3', this)">M3 (6m)</button>
-      <button class="chip" data-eng="M5" onclick="setFilter('M5', this)">M5 Снайпер</button>
-      <button class="chip" data-eng="M15" onclick="setFilter('M15', this)">M15 (10m)</button>
-    </div>
+        <div class="search-box" style="margin-bottom: 10px;">
+          <svg class="search-ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input id="otcSearch" class="search-input" type="text" placeholder="Поиск пары (EUR/USD, JPY, Gold...)" oninput="renderOtcList()" />
+        </div>
 
-    <div class="list" id="tradesList"></div>
+        <div class="seg-bar" style="width:100%; display:grid; grid-template-columns:1fr 1fr 1fr;">
+          <button class="seg-btn active" onclick="setOtcCat('ALL', this)">Все</button>
+          <button class="seg-btn" onclick="setOtcCat('FX', this)">Валюты</button>
+          <button class="seg-btn" onclick="setOtcCat('ALT', this)">Сырьё / Крипто</button>
+        </div>
+      </div>
+
+      <div id="otcGrid" class="otc-grid"></div>
+    </div>
+  </div>
+
+  <!-- Zoom Modal for Candle Chart -->
+  <div id="chartModal" class="modal-backdrop" onclick="closeModal(event)">
+    <div class="glass modal-card" onclick="event.stopPropagation()">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <div>
+          <div id="modalTitle" style="font-size:16px; font-weight:700;">EUR/USD</div>
+          <div id="modalSub" style="font-size:11.5px; color:var(--muted); margin-top:2px;">M1 TradingView</div>
+        </div>
+        <button class="apple-btn" onclick="document.getElementById('chartModal').classList.remove('open')">Закрыть</button>
+      </div>
+      <div id="modalChartArea" class="tv-chart-box" style="cursor:default;"></div>
+      <div id="modalDetails" class="trade-meta" style="margin-top:10px;"></div>
+    </div>
+  </div>
+
+  <!-- Bottom Apple Frosted Tab Bar -->
+  <div class="bottom-dock-wrap">
+    <div class="bottom-dock">
+      <button class="dock-tab active" id="tab-forex" onclick="switchTab('forex')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="20" x2="18" y2="10"></line>
+          <line x1="12" y1="20" x2="12" y2="4"></line>
+          <line x1="6" y1="20" x2="6" y2="14"></line>
+        </svg>
+        <span>Forex</span>
+      </button>
+      <button class="dock-tab" id="tab-otc" onclick="switchTab('otc')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        <span>OTC</span>
+      </button>
+    </div>
   </div>
 
   <script>
-    if (window.Telegram && window.Telegram.WebApp) {
-      const tg = window.Telegram.WebApp;
+    const tg = window.Telegram && window.Telegram.WebApp;
+    if (tg) {
       tg.ready();
       tg.expand();
-      tg.setHeaderColor("#050b14");
-      tg.setBackgroundColor("#050b14");
+      if (tg.setHeaderColor) tg.setHeaderColor("#000000");
+      if (tg.setBackgroundColor) tg.setBackgroundColor("#000000");
     }
 
-    const ALLOWED_UID = "6512413745";
-    const curUser = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user;
-    if (!curUser || String(curUser.id) !== ALLOWED_UID) {
-      document.body.innerHTML = '<div style="min-height:85vh;display:flex;align-items:center;justify-content:center;padding:20px;"><div style="max-width:360px;width:100%;background:rgba(11,21,38,0.95);border:1px solid rgba(56,189,248,0.22);border-radius:18px;padding:26px 20px;text-align:center;box-shadow:0 12px 32px rgba(0,0,0,0.45);"><div style="width:46px;height:46px;margin:0 auto 14px;border-radius:12px;background:rgba(56,189,248,0.12);border:1px solid rgba(56,189,248,0.3);display:flex;align-items:center;justify-content:center;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></div><div style="font-size:17px;font-weight:700;color:#e6f1ff;margin-bottom:6px;">Доступ ограничен</div><div style="font-size:13px;color:#7da0c4;line-height:1.45;">Приватный терминал LON P2 v4.<br>Просмотр статистики доступен только владельцу бота.</div></div></div>';
-      throw new Error("Access restricted");
+    function haptic() {
+      try { tg && tg.HapticFeedback && tg.HapticFeedback.impactOccurred("light"); } catch (e) {}
     }
 
-    const DEMO_STATE = {
-      peak_balance: 9.59,
-      wins: 2,
-      losses: 1,
-      draws: 0,
-      trades: [
-        { ts_msk: "2026-11-24 12:15:00", pair: "CHF/JPY", engine: "M5_FADE", exp_min: 20, direction: "PUT", entry: 189.74, exit: 189.58, outcome: "WIN", payout: 88, stake: 1.0, balance: 8.77 },
-        { ts_msk: "2026-11-24 12:52:00", pair: "EUR/USD", engine: "M3_FADE", exp_min: 6, direction: "CALL", entry: 1.0948, exit: 1.0942, outcome: "LOSS", payout: 82, stake: 1.0, balance: 7.77 },
-        { ts_msk: "2026-11-24 13:24:00", pair: "CHF/JPY", engine: "M5_FADE", exp_min: 20, direction: "PUT", entry: 189.69, exit: 189.51, outcome: "WIN", payout: 88, stake: 1.0, balance: 8.65 }
-      ]
-    };
-
-    let currentState = DEMO_STATE;
-    let activeFilter = "ALL";
-
-    function fmtUsd(v) {
-      const n = Number(v || 0);
-      return "$" + n.toFixed(2);
+    function showToast(msg) {
+      const el = document.getElementById("toast");
+      el.textContent = msg;
+      el.classList.add("show");
+      setTimeout(() => el.classList.remove("show"), 2600);
     }
 
-    function setFilter(eng, el) {
-      activeFilter = eng;
-      document.querySelectorAll(".chip").forEach(c => c.classList.remove("active"));
-      if (el) el.classList.add("active");
-      render();
+    const PO_OTC_PAIRS = [
+      { pair: "EUR/USD OTC", cat: "FX", label: "Major OTC" },
+      { pair: "GBP/USD OTC", cat: "FX", label: "Major OTC" },
+      { pair: "USD/JPY OTC", cat: "FX", label: "Major OTC" },
+      { pair: "USD/CHF OTC", cat: "FX", label: "Major OTC" },
+      { pair: "USD/CAD OTC", cat: "FX", label: "Major OTC" },
+      { pair: "AUD/USD OTC", cat: "FX", label: "Major OTC" },
+      { pair: "NZD/USD OTC", cat: "FX", label: "Major OTC" },
+      { pair: "EUR/GBP OTC", cat: "FX", label: "Cross OTC" },
+      { pair: "EUR/JPY OTC", cat: "FX", label: "Cross OTC" },
+      { pair: "EUR/CHF OTC", cat: "FX", label: "Cross OTC" },
+      { pair: "EUR/AUD OTC", cat: "FX", label: "Cross OTC" },
+      { pair: "EUR/CAD OTC", cat: "FX", label: "Cross OTC" },
+      { pair: "EUR/NZD OTC", cat: "FX", label: "Cross OTC" },
+      { pair: "GBP/JPY OTC", cat: "FX", label: "Cross OTC" },
+      { pair: "GBP/CHF OTC", cat: "FX", label: "Cross OTC" },
+      { pair: "GBP/AUD OTC", cat: "FX", label: "Cross OTC" },
+      { pair: "GBP/CAD OTC", cat: "FX", label: "Cross OTC" },
+      { pair: "GBP/NZD OTC", cat: "FX", label: "Cross OTC" },
+      { pair: "AUD/JPY OTC", cat: "FX", label: "Cross OTC" },
+      { pair: "AUD/CHF OTC", cat: "FX", label: "Cross OTC" },
+      { pair: "AUD/CAD OTC", cat: "FX", label: "Cross OTC" },
+      { pair: "AUD/NZD OTC", cat: "FX", label: "Cross OTC" },
+      { pair: "CAD/CHF OTC", cat: "FX", label: "Cross OTC" },
+      { pair: "CAD/JPY OTC", cat: "FX", label: "Cross OTC" },
+      { pair: "CHF/JPY OTC", cat: "FX", label: "Cross OTC" },
+      { pair: "NZD/CAD OTC", cat: "FX", label: "Cross OTC" },
+      { pair: "NZD/CHF OTC", cat: "FX", label: "Cross OTC" },
+      { pair: "NZD/JPY OTC", cat: "FX", label: "Cross OTC" },
+      { pair: "USD/RUB OTC", cat: "FX", label: "Exotic OTC" },
+      { pair: "USD/CNH OTC", cat: "FX", label: "Exotic OTC" },
+      { pair: "USD/INR OTC", cat: "FX", label: "Exotic OTC" },
+      { pair: "Gold OTC",    cat: "ALT", label: "Commodity OTC" },
+      { pair: "Silver OTC",  cat: "ALT", label: "Commodity OTC" },
+      { pair: "Brent Oil OTC", cat: "ALT", label: "Commodity OTC" },
+      { pair: "Bitcoin OTC", cat: "ALT", label: "Crypto OTC" },
+      { pair: "Ethereum OTC", cat: "ALT", label: "Crypto OTC" }
+    ];
+
+    let appState = { current_balance: 0, peak_balance: 0, wins: 0, losses: 0, draws: 0, open_trades: [], trades: [] };
+    let currentFilter = "ALL";
+    let visibleLimit = 30;
+    let otcCat = "ALL";
+
+    function switchTab(tab) {
+      haptic();
+      document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+      document.querySelectorAll(".dock-tab").forEach(b => b.classList.remove("active"));
+      document.getElementById("view-" + tab).classList.add("active");
+      document.getElementById("tab-" + tab).classList.add("active");
+      if (tab === "otc") renderOtcList();
     }
 
-    function drawChart(trades, fallbackBal) {
-      const canvas = document.getElementById("eqChart");
-      const ctx = canvas.getContext("2d");
-      const w = canvas.width, h = canvas.height;
-      ctx.clearRect(0, 0, w, h);
+    function setFilter(f, btn) {
+      haptic();
+      currentFilter = f;
+      visibleLimit = 30;
+      document.querySelectorAll("#view-forex .seg-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      renderTrades();
+    }
 
-      const pts = trades
-        .map(t => Number(t.balance))
-        .filter(v => Number.isFinite(v) && v > 0);
+    function setOtcCat(cat, btn) {
+      haptic();
+      otcCat = cat;
+      document.querySelectorAll("#view-otc .seg-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      renderOtcList();
+    }
+
+    function loadMoreTrades() {
+      haptic();
+      visibleLimit += 30;
+      renderTrades();
+    }
+
+    function detectCurrency() {
+      const bal = Number(appState.current_balance || 0);
+      const trs = appState.trades || [];
+      const maxStake = trs.reduce((m, t) => Math.max(m, Number(t.stake || 0)), 0);
+      return (bal >= 100 || maxStake >= 100) ? "₽" : "$";
+    }
+
+    function fmtMoney(v) {
+      const cur = detectCurrency();
+      const num = Number(v || 0);
+      if (cur === "₽") return Math.round(num).toLocaleString("ru-RU") + " ₽";
+      return "$" + num.toFixed(2);
+    }
+
+    function getMonthTrades() {
+      const all = appState.trades || [];
+      const cutoff = Date.now() - 31 * 86400 * 1000;
+      return all.filter(t => {
+        if (!t.ts_msk) return true;
+        const parsed = Date.parse(t.ts_msk.replace(" ", "T") + "+03:00");
+        return isNaN(parsed) ? true : parsed >= cutoff;
+      });
+    }
+
+    function renderHero() {
+      const bal = Number(appState.current_balance || 0);
+      const peak = Math.max(Number(appState.peak_balance || 0), bal);
+      const dd = peak > 0 ? ((peak - bal) / peak * 100) : 0;
+
+      document.getElementById("balVal").textContent = fmtMoney(bal);
+      document.getElementById("peakVal").textContent = fmtMoney(peak);
+      const ddEl = document.getElementById("ddVal");
+      ddEl.textContent = "DD: -" + dd.toFixed(1) + "%";
+      ddEl.className = dd >= 25 ? "c-red" : (dd >= 12 ? "c-amber" : "");
+
+      const mTrades = getMonthTrades();
+      const wins = mTrades.filter(t => t.outcome === "WIN").length;
+      const losses = mTrades.filter(t => t.outcome === "LOSS").length;
+      const decided = wins + losses;
+      const wr = decided > 0 ? (wins / decided * 100) : 0;
+      const netPnl = mTrades.reduce((acc, t) => acc + Number(t.pnl || 0), 0);
+
+      document.getElementById("wr30Val").textContent = wr.toFixed(1) + "%";
+      document.getElementById("cnt30Val").textContent = mTrades.length;
+      document.getElementById("dayWlVal").textContent = (appState.wins || 0) + " / " + (appState.losses || 0);
+
+      const pnlEl = document.getElementById("pnl30Val");
+      pnlEl.textContent = (netPnl >= 0 ? "+" : "") + fmtMoney(netPnl);
+      pnlEl.className = "metric-v " + (netPnl >= 0 ? "c-green" : "c-red");
+
+      renderEquityCurve(mTrades, bal);
+    }
+
+    function renderEquityCurve(trades, curBal) {
+      const box = document.getElementById("equitySvgBox");
+      const pts = trades.map(t => Number(t.balance)).filter(v => !isNaN(v) && v > 0);
+      if (curBal > 0) pts.push(curBal);
 
       if (pts.length < 2) {
-        const b = pts.length === 1 ? pts[0] : Number(fallbackBal || 7.89);
-        ctx.strokeStyle = "#38bdf8";
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        ctx.moveTo(16, h * 0.55);
-        ctx.lineTo(w - 16, h * 0.55);
-        ctx.stroke();
-        ctx.fillStyle = "#7da0c4";
-        ctx.font = "12px sans-serif";
-        ctx.fillText("Баланс: " + fmtUsd(b) + " (кривая появится после 2+ закрытых сделок)", 16, 26);
+        box.innerHTML = '<div style="height:54px; display:grid; place-items:center; font-size:11px; color:var(--subtle);">Недостаточно точек для кривой баланса</div>';
         return;
       }
 
-      const pad = 16;
+      const w = 480, h = 68, pad = 6;
       const minV = Math.min(...pts);
       const maxV = Math.max(...pts);
-      const span = Math.max(0.05, maxV - minV);
+      const span = Math.max(maxV - minV, 0.01);
 
-      const coords = pts.map((val, idx) => {
+      const coords = pts.map((v, idx) => {
         const x = pad + (idx / (pts.length - 1)) * (w - pad * 2);
-        const y = h - pad - ((val - minV) / span) * (h - pad * 2);
-        return [x, y];
+        const y = h - pad - ((v - minV) / span) * (h - pad * 2);
+        return [x.toFixed(1), y.toFixed(1)];
       });
 
-      const grad = ctx.createLinearGradient(0, 0, 0, h);
-      grad.addColorStop(0, "rgba(56, 189, 248, 0.34)");
-      grad.addColorStop(1, "rgba(56, 189, 248, 0.0)");
+      const lineD = coords.map((p, i) => (i === 0 ? "M" : "L") + p[0] + "," + p[1]).join(" ");
+      const areaD = lineD + ` L${coords[coords.length - 1][0]},${h} L${coords[0][0]},${h} Z`;
+      const isUp = pts[pts.length - 1] >= pts[0];
+      const stroke = isUp ? "#30d158" : "#ff453a";
 
-      ctx.beginPath();
-      ctx.moveTo(coords[0][0], h - pad);
-      coords.forEach(([x, y]) => ctx.lineTo(x, y));
-      ctx.lineTo(coords[coords.length - 1][0], h - pad);
-      ctx.closePath();
-      ctx.fillStyle = grad;
-      ctx.fill();
+      box.innerHTML = `
+        <svg viewBox="0 0 ${w} ${h}" width="100%" height="68" preserveAspectRatio="none" style="display:block;">
+          <defs>
+            <linearGradient id="eqGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="${stroke}" stop-opacity="0.28"/>
+              <stop offset="100%" stop-color="${stroke}" stop-opacity="0.0"/>
+            </linearGradient>
+          </defs>
+          <path d="${areaD}" fill="url(#eqGrad)"/>
+          <path d="${lineD}" fill="none" stroke="${stroke}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      `;
+    }
 
-      ctx.beginPath();
-      coords.forEach(([x, y], i) => i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y));
-      ctx.strokeStyle = "#38bdf8";
-      ctx.lineWidth = 2.5;
-      ctx.stroke();
+    function buildTvCandleSvg(trade, heightPx = 98) {
+      const candles = Array.isArray(trade.candles) ? trade.candles : [];
+      const entryPx = Number(trade.entry || 0);
+      const exitPx = Number(trade.exit || 0);
+      const isWin = trade.outcome === "WIN";
+      const accent = isWin ? "#30d158" : "#ff453a";
+      const w = 460, h = heightPx, padX = 10, padY = 12;
 
-      coords.forEach(([x, y]) => {
-        ctx.beginPath();
-        ctx.arc(x, y, 3.5, 0, Math.PI * 2);
-        ctx.fillStyle = "#7dd3fc";
-        ctx.fill();
+      if (candles.length < 2) {
+        // Fallback trajectory when candle array was not yet attached
+        const yIn = isWin ? (trade.direction === "CALL" ? h - 22 : 22) : (trade.direction === "CALL" ? 22 : h - 22);
+        const yOut = isWin ? (trade.direction === "CALL" ? 22 : h - 22) : (trade.direction === "CALL" ? h - 22 : 22);
+        return `
+          <svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" style="display:block;">
+            <line x1="${padX}" y1="${yIn}" x2="${w - padX}" y2="${yIn}" stroke="rgba(255,255,255,0.22)" stroke-dasharray="4 4" stroke-width="1"/>
+            <path d="M ${padX + 24} ${yIn} Q ${w * 0.5} ${(yIn + yOut) * 0.5} ${w - padX - 24} ${yOut}" fill="none" stroke="${accent}" stroke-width="2.2"/>
+            <circle cx="${padX + 24}" cy="${yIn}" r="4" fill="#0a84ff"/>
+            <circle cx="${w - padX - 24}" cy="${yOut}" r="4.5" fill="${accent}"/>
+            <text x="${padX + 32}" y="${yIn - 5}" fill="#8e8e93" font-size="10" font-family="-apple-system,sans-serif">IN ${entryPx.toFixed(5)}</text>
+            <text x="${w - padX - 96}" y="${yOut - 6}" fill="${accent}" font-size="10" font-weight="600" font-family="-apple-system,sans-serif">OUT ${exitPx.toFixed(5)}</text>
+          </svg>
+        `;
+      }
+
+      // Candle tuple: [ts, o, h, l, c]
+      let lo = Math.min(entryPx || Infinity, exitPx || Infinity);
+      let hi = Math.max(entryPx || -Infinity, exitPx || -Infinity);
+      candles.forEach(c => {
+        lo = Math.min(lo, Number(c[3]));
+        hi = Math.max(hi, Number(c[2]));
+      });
+      const span = Math.max(hi - lo, 1e-6);
+      const yOf = (px) => padY + ((hi - px) / span) * (h - padY * 2);
+
+      const n = candles.length;
+      const step = (w - padX * 2) / n;
+      const bodyW = Math.max(3.5, Math.min(11, step * 0.58));
+
+      const entryTs = Number(trade.entry_ts || 0);
+      const exitTs = Number(trade.exit_ts || 0);
+      let inIdx = -1, outIdx = n - 1;
+      candles.forEach((c, idx) => {
+        const cts = Number(c[0]);
+        if (entryTs && Math.abs(cts - entryTs) <= 60 && inIdx === -1) inIdx = idx;
+        if (exitTs && Math.abs(cts - exitTs) <= 60) outIdx = idx;
+      });
+      if (inIdx === -1) inIdx = Math.max(0, n - 8);
+
+      const xIn = padX + (inIdx + 0.5) * step;
+      const xOut = padX + (outIdx + 0.5) * step;
+      const yIn = yOf(entryPx);
+      const yOut = yOf(exitPx);
+
+      let barsSvg = "";
+      candles.forEach((c, idx) => {
+        const o = Number(c[1]), hiC = Number(c[2]), loC = Number(c[3]), cl = Number(c[4]);
+        const cx = padX + (idx + 0.5) * step;
+        const bull = cl >= o;
+        const col = bull ? "#30d158" : "#ff453a";
+        const yH = yOf(hiC), yL = yOf(loC);
+        const yTop = yOf(Math.max(o, cl));
+        const bH = Math.max(1.8, Math.abs(yOf(o) - yOf(cl)));
+        barsSvg += `<line x1="${cx.toFixed(1)}" y1="${yH.toFixed(1)}" x2="${cx.toFixed(1)}" y2="${yL.toFixed(1)}" stroke="${col}" stroke-width="1.2" opacity="0.85"/>`;
+        barsSvg += `<rect x="${(cx - bodyW / 2).toFixed(1)}" y="${yTop.toFixed(1)}" width="${bodyW.toFixed(1)}" height="${bH.toFixed(1)}" rx="1.2" fill="${col}"/>`;
+      });
+
+      return `
+        <svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" style="display:block;">
+          <rect x="${Math.min(xIn, xOut).toFixed(1)}" y="2" width="${Math.max(6, Math.abs(xOut - xIn)).toFixed(1)}" height="${h - 4}" fill="${accent}" opacity="0.08" rx="4"/>
+          <line x1="${padX}" y1="${yIn.toFixed(1)}" x2="${w - padX}" y2="${yIn.toFixed(1)}" stroke="#0a84ff" stroke-dasharray="3 3" stroke-width="1" opacity="0.75"/>
+          <line x1="${padX}" y1="${yOut.toFixed(1)}" x2="${w - padX}" y2="${yOut.toFixed(1)}" stroke="${accent}" stroke-dasharray="2 3" stroke-width="1" opacity="0.65"/>
+          ${barsSvg}
+          <circle cx="${xIn.toFixed(1)}" cy="${yIn.toFixed(1)}" r="3.6" fill="#0a84ff" stroke="#000" stroke-width="1"/>
+          <circle cx="${xOut.toFixed(1)}" cy="${yOut.toFixed(1)}" r="4" fill="${accent}" stroke="#000" stroke-width="1"/>
+        </svg>
+      `;
+    }
+
+    function openTradeModal(idx) {
+      haptic();
+      const filtered = getFilteredTrades();
+      const tr = filtered[idx];
+      if (!tr) return;
+      document.getElementById("modalTitle").textContent = `${tr.pair} · ${tr.direction} (${tr.outcome})`;
+      document.getElementById("modalSub").textContent = `${tr.engine} (${tr.exp_min}m) · Вход ${tr.entry_ts_msk || ""} → Выход ${tr.ts_msk || ""}`;
+      document.getElementById("modalChartArea").innerHTML = buildTvCandleSvg(tr, 190);
+      document.getElementById("modalDetails").innerHTML = `
+        <span>Вход: <strong>${Number(tr.entry).toFixed(5)}</strong> → Выход: <strong>${Number(tr.exit).toFixed(5)}</strong> (${Number(tr.delta_pips || 0) >= 0 ? "+" : ""}${Number(tr.delta_pips || 0).toFixed(1)}p)</span>
+        <span>Ставка: <strong>${fmtMoney(tr.stake)}</strong> · Выплата: <strong>+${tr.payout}%</strong> · PnL: <strong>${Number(tr.pnl) >= 0 ? "+" : ""}${fmtMoney(tr.pnl)}</strong></span>
+      `;
+      document.getElementById("chartModal").classList.add("open");
+    }
+
+    function closeModal(e) {
+      if (e.target.id === "chartModal") {
+        document.getElementById("chartModal").classList.remove("open");
+      }
+    }
+
+    function getFilteredTrades() {
+      const list = [...getMonthTrades()].reverse();
+      return list.filter(t => {
+        if (currentFilter === "WIN") return t.outcome === "WIN";
+        if (currentFilter === "LOSS") return t.outcome === "LOSS";
+        if (currentFilter === "M5") return (t.engine || "").includes("M5");
+        return true;
       });
     }
 
-    function render() {
-      const st = currentState || {};
-      const allTrades = Array.isArray(st.trades) ? st.trades : [];
-      const filtered = activeFilter === "ALL"
-        ? allTrades
-        : allTrades.filter(t => String(t.engine || "").startsWith(activeFilter));
-
-      const lastBal = allTrades.length > 0 && allTrades[allTrades.length - 1].balance != null
-        ? Number(allTrades[allTrades.length - 1].balance)
-        : (Number(st.current_balance || 0) > 0 ? Number(st.current_balance) : (Number(st.peak_balance || 0) > 0 ? Number(st.peak_balance) : 7.89));
-      const peak = Math.max(Number(st.peak_balance || 0), lastBal);
-      const dd = peak > 0 ? Math.max(0, ((peak - lastBal) / peak) * 100) : 0;
-
-      const w = Number(st.wins || 0);
-      const l = Number(st.losses || 0);
-      const d = Number(st.draws || 0);
-      const wr = (w + l) > 0 ? ((w / (w + l)) * 100).toFixed(1) : "0.0";
-
-      document.getElementById("curBalance").textContent = fmtUsd(lastBal);
-      document.getElementById("peakInfo").textContent = `Пик: ${fmtUsd(peak)} · DD: -${dd.toFixed(1)}%`;
-      document.getElementById("winrateVal").textContent = wr + "%";
-      document.getElementById("wldVal").textContent = `${w} / ${l} / ${d}`;
-      document.getElementById("tradesCountVal").textContent = String(filtered.length);
-
-      drawChart(allTrades, lastBal);
-
-      const box = document.getElementById("tradesList");
-      if (!filtered.length) {
-        box.innerHTML = `<div class="empty">Закрытых сделок по выбранному фильтру пока нет.</div>`;
+    function renderOpenTrades() {
+      const box = document.getElementById("openTradesBox");
+      const open = appState.open_trades || [];
+      if (!open.length) {
+        box.innerHTML = "";
         return;
       }
-
-      box.innerHTML = [...filtered].reverse().map(t => {
-        const out = String(t.outcome || "DRAW");
-        const dir = t.direction === "CALL" ? "CALL ▲" : "PUT ▼";
-        const balTxt = t.balance != null ? fmtUsd(t.balance) : "-";
+      const nowSec = Math.floor(Date.now() / 1000);
+      box.innerHTML = open.map(tr => {
+        const left = Math.max(0, Number(tr.resolve_ts || 0) - nowSec);
+        const mm = String(Math.floor(left / 60)).padStart(2, "0");
+        const ss = String(left % 60).padStart(2, "0");
+        const isCall = tr.direction === "CALL";
         return `
-          <div class="item">
-            <div class="item-left">
-              <div class="pair-line">${t.pair || "-"} <span class="tag">${t.engine || ""}</span> <span class="tag">${dir}</span></div>
-              <div class="meta-line">${t.ts_msk || ""} · ${t.exp_min || ""}m · Вход ${t.entry} → Выход ${t.exit}</div>
+          <div class="glass open-card">
+            <div class="open-row">
+              <div class="pair-group">
+                <span class="pair-name">${tr.pair}</span>
+                <span class="badge ${isCall ? "badge-call" : "badge-put"}">${isCall ? "CALL ↑" : "PUT ↓"}</span>
+                <span class="badge badge-eng">${tr.engine} · ${tr.exp_min}m</span>
+              </div>
+              <div class="timer-pill">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <span>${mm}:${ss}</span>
+              </div>
             </div>
-            <div class="item-right">
-              <span class="badge ${out}">${out}</span>
-              <span class="bal-after">${balTxt}</span>
+            <div style="display:flex; justify-content:space-between; font-size:11.5px; color:var(--muted); margin-top:8px;">
+              <span>Вход TV: <strong style="color:var(--text);">${Number(tr.entry).toFixed(5)}</strong></span>
+              <span>Ставка: <strong style="color:var(--text);">${fmtMoney(tr.stake)}</strong> (+${tr.payout}%)</span>
             </div>
           </div>
         `;
       }).join("");
     }
 
-    async function loadData() {
-      const urls = [
-        "https://raw.githubusercontent.com/Captalink/lon4-miniapp/main/state.json?t=" + Date.now(),
-        "./state.json?t=" + Date.now(),
-        "/api/state"
-      ];
+    function renderTrades() {
+      const list = getFilteredTrades();
+      const slice = list.slice(0, visibleLimit);
+      const container = document.getElementById("tradeList");
+      const moreBtn = document.getElementById("loadMoreBtn");
+
+      moreBtn.style.display = list.length > visibleLimit ? "inline-flex" : "none";
+
+      if (!slice.length) {
+        container.innerHTML = '<div class="glass empty-state">Нет закрытых сделок по выбранному фильтру</div>';
+        return;
+      }
+
+      container.innerHTML = slice.map((tr, idx) => {
+        const isWin = tr.outcome === "WIN";
+        const isCall = tr.direction === "CALL";
+        const pnl = Number(tr.pnl || 0);
+        const pips = Number(tr.delta_pips || 0);
+        const hasCandles = Array.isArray(tr.candles) && tr.candles.length >= 2;
+
+        return `
+          <div class="glass trade-card">
+            <div class="trade-top">
+              <div class="pair-group">
+                <span class="pair-name">${tr.pair}</span>
+                <span class="badge ${isCall ? "badge-call" : "badge-put"}">${isCall ? "CALL" : "PUT"}</span>
+                <span class="badge badge-eng">${(tr.engine || "").replace("_FADE", "")} · ${tr.exp_min}m</span>
+                <span class="badge ${isWin ? "badge-win" : "badge-loss"}">${tr.outcome}</span>
+              </div>
+              <div class="pnl-box">
+                <div class="pnl-val ${isWin ? "c-green" : "c-red"}">${pnl >= 0 ? "+" : ""}${fmtMoney(pnl)}</div>
+                <div class="pips-val">${pips >= 0 ? "+" : ""}${pips.toFixed(1)}p · +${tr.payout}%</div>
+              </div>
+            </div>
+
+            <div class="tv-chart-box" onclick="openTradeModal(${idx})">
+              <div class="tv-chart-caption">
+                <span>${hasCandles ? "TradingView M1 (" + tr.candles.length + " свечей)" : "Траектория входа/выхода"}</span>
+                <span>${Number(tr.entry).toFixed(5)} → ${Number(tr.exit).toFixed(5)}</span>
+              </div>
+              ${buildTvCandleSvg(tr, 96)}
+            </div>
+
+            <div class="trade-meta">
+              <span>${(tr.ts_msk || "").slice(5, 16)} МСК · Ставка ${fmtMoney(tr.stake)}</span>
+              <div class="ind-pills">
+                ${tr.zscore !== undefined ? `<span class="ind-pill">Z ${Number(tr.zscore) >= 0 ? "+" : ""}${Number(tr.zscore).toFixed(2)}</span>` : ""}
+                ${tr.rsi2 !== undefined ? `<span class="ind-pill">RSI ${Number(tr.rsi2).toFixed(0)}</span>` : ""}
+                ${tr.sw_atr !== undefined ? `<span class="ind-pill">ATR ${Number(tr.sw_atr).toFixed(1)}</span>` : ""}
+                ${tr.adx14 !== undefined ? `<span class="ind-pill">ADX ${Number(tr.adx14).toFixed(0)}</span>` : ""}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function renderOtcList() {
+      const q = (document.getElementById("otcSearch").value || "").trim().toLowerCase();
+      const liveOtcMap = appState.otc_payouts || {};
+
+      const filtered = PO_OTC_PAIRS.filter(item => {
+        if (otcCat !== "ALL" && item.cat !== otcCat) return false;
+        if (q && !item.pair.toLowerCase().includes(q) && !item.label.toLowerCase().includes(q)) return false;
+        return true;
+      });
+
+      document.getElementById("otcCountBadge").textContent = filtered.length + " пар";
+      const grid = document.getElementById("otcGrid");
+
+      grid.innerHTML = filtered.map(item => {
+        const pay = liveOtcMap[item.pair] || liveOtcMap[item.pair.replace("/", "")];
+        return `
+          <div class="glass otc-item">
+            <div>
+              <div class="otc-pair">${item.pair}</div>
+              <div class="otc-tag">${item.label}</div>
+            </div>
+            ${pay ? `<span class="otc-pay">+${pay}%</span>` : `<span class="otc-dot"></span>`}
+          </div>
+        `;
+      }).join("");
+    }
+
+    async function exportMonthlyData() {
+      haptic();
+      const mTrades = getMonthTrades();
+      const wins = mTrades.filter(t => t.outcome === "WIN").length;
+      const losses = mTrades.filter(t => t.outcome === "LOSS").length;
+      const payload = {
+        exported_at_msk: new Date().toLocaleString("ru-RU", { timeZone: "Europe/Moscow" }),
+        strategy: "LON P2 v4 · m3_regime_gated",
+        summary_30d: {
+          current_balance: appState.current_balance,
+          peak_balance: appState.peak_balance,
+          total_trades: mTrades.length,
+          wins: wins,
+          losses: losses,
+          win_rate_pct: (wins + losses) > 0 ? Number((wins / (wins + losses) * 100).toFixed(2)) : 0,
+          net_pnl: Number(mTrades.reduce((s, t) => s + Number(t.pnl || 0), 0).toFixed(2))
+        },
+        trades_with_tv_candles: mTrades
+      };
+
+      const jsonStr = JSON.stringify(payload, null, 2);
+      const dateTag = new Date().toISOString().slice(0, 10);
+      const fileName = `lon_p2_month_${dateTag}.json`;
+
+      try {
+        const blob = new Blob([jsonStr], { type: "application/json;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1500);
+        showToast(`Выгружено: ${fileName} (${mTrades.length} сделок)`);
+      } catch (e) {
+        if (navigator.clipboard) {
+          await navigator.clipboard.writeText(jsonStr);
+          showToast("JSON скопирован в буфер обмена");
+        }
+      }
+    }
+
+    async function fetchState() {
+      const urls = ["/state.json?t=" + Date.now(), "state.json?t=" + Date.now()];
       for (const u of urls) {
         try {
-          const resp = await fetch(u, { cache: "no-store" });
-          if (resp.ok) {
-            currentState = await resp.json();
-            document.getElementById("statusSub").textContent = "Онлайн · Реальные данные бота";
-            render();
+          const r = await fetch(u, { cache: "no-store" });
+          if (r.ok) {
+            appState = await r.json();
+            renderHero();
+            renderOpenTrades();
+            renderTrades();
+            document.getElementById("syncStatus").textContent = "Онлайн · " + new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
             return;
           }
         } catch (e) {}
       }
-      document.getElementById("statusSub").textContent = "Демо-режим (ожидание первой синхронизации)";
-      render();
     }
 
-    loadData();
+    fetchState();
+    renderOtcList();
+    setInterval(fetchState, 4000);
+    setInterval(renderOpenTrades, 1000);
   </script>
 </body>
 </html>
