@@ -5,6 +5,7 @@
   "wins": 0,
   "losses": 0,
   "draws": 0,
+  "open_trades": [],
   "trades": [
     {
       "ts_msk": "2026-11-25 13:18:49",
