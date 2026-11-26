@@ -970,25 +970,28 @@
       const exitPx = Number(trade.exit || 0);
       const isWin = trade.outcome === "WIN";
       const accent = isWin ? "#30d158" : "#ff453a";
-      const w = 460, h = heightPx, padX = 10, padY = 12;
+      const w = 460, h = heightPx, padX = 8, padY = 14;
 
       if (candles.length < 2) {
-        // Fallback trajectory when candle array was not yet attached
-        const yIn = isWin ? (trade.direction === "CALL" ? h - 22 : 22) : (trade.direction === "CALL" ? 22 : h - 22);
-        const yOut = isWin ? (trade.direction === "CALL" ? 22 : h - 22) : (trade.direction === "CALL" ? h - 22 : 22);
+        const isCall = trade.direction === "CALL";
+        const yIn = isWin ? (isCall ? h - 24 : 24) : (isCall ? 24 : h - 24);
+        const yOut = isWin ? (isCall ? 24 : h - 24) : (isCall ? h - 24 : 24);
+        const topY = Math.min(yIn, yOut);
+        const boxH = Math.max(4, Math.abs(yOut - yIn));
         return `
           <svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" style="display:block;">
-            <line x1="${padX}" y1="${yIn}" x2="${w - padX}" y2="${yIn}" stroke="rgba(255,255,255,0.22)" stroke-dasharray="4 4" stroke-width="1"/>
-            <path d="M ${padX + 24} ${yIn} Q ${w * 0.5} ${(yIn + yOut) * 0.5} ${w - padX - 24} ${yOut}" fill="none" stroke="${accent}" stroke-width="2.2"/>
-            <circle cx="${padX + 24}" cy="${yIn}" r="4" fill="#0a84ff"/>
-            <circle cx="${w - padX - 24}" cy="${yOut}" r="4.5" fill="${accent}"/>
-            <text x="${padX + 32}" y="${yIn - 5}" fill="#8e8e93" font-size="10" font-family="-apple-system,sans-serif">IN ${entryPx.toFixed(5)}</text>
-            <text x="${w - padX - 96}" y="${yOut - 6}" fill="${accent}" font-size="10" font-weight="600" font-family="-apple-system,sans-serif">OUT ${exitPx.toFixed(5)}</text>
+            <rect x="${padX}" y="${topY}" width="${w - padX * 2}" height="${boxH}" fill="${accent}" opacity="0.08"/>
+            <line x1="${padX}" y1="${yIn}" x2="${w - padX}" y2="${yIn}" stroke="#0a84ff" stroke-dasharray="4 3" stroke-width="1.3"/>
+            <line x1="${padX}" y1="${yOut}" x2="${w - padX}" y2="${yOut}" stroke="${accent}" stroke-width="1.4"/>
+            <rect x="${padX + 4}" y="${yIn - 11}" width="92" height="14" rx="4" fill="rgba(10,132,255,0.22)"/>
+            <text x="${padX + 9}" y="${yIn - 1}" fill="#64b5ff" font-size="9.5" font-weight="600" font-family="-apple-system,sans-serif">IN ${entryPx.toFixed(5)}</text>
+            <rect x="${w - padX - 104}" y="${yOut - 11}" width="100" height="14" rx="4" fill="${isWin ? "rgba(48,209,88,0.22)" : "rgba(255,69,58,0.22)"}"/>
+            <text x="${w - padX - 99}" y="${yOut - 1}" fill="${accent}" font-size="9.5" font-weight="600" font-family="-apple-system,sans-serif">OUT ${exitPx.toFixed(5)}</text>
+            <text x="${w * 0.5}" y="${h * 0.5 + 3}" text-anchor="middle" fill="#636366" font-size="10" font-family="-apple-system,sans-serif">Свечи TV появятся со следующей сделки</text>
           </svg>
         `;
       }
 
-      // Candle tuple: [ts, o, h, l, c]
       let lo = Math.min(entryPx || Infinity, exitPx || Infinity);
       let hi = Math.max(entryPx || -Infinity, exitPx || -Infinity);
       candles.forEach(c => {
@@ -999,16 +1002,18 @@
       const yOf = (px) => padY + ((hi - px) / span) * (h - padY * 2);
 
       const n = candles.length;
-      const step = (w - padX * 2) / n;
-      const bodyW = Math.max(3.5, Math.min(11, step * 0.58));
+      const rightLabelSpace = 86;
+      const plotW = w - padX * 2 - rightLabelSpace;
+      const step = plotW / n;
+      const bodyW = Math.max(4, Math.min(12, step * 0.62));
 
       const entryTs = Number(trade.entry_ts || 0);
       const exitTs = Number(trade.exit_ts || 0);
       let inIdx = -1, outIdx = n - 1;
       candles.forEach((c, idx) => {
         const cts = Number(c[0]);
-        if (entryTs && Math.abs(cts - entryTs) <= 60 && inIdx === -1) inIdx = idx;
-        if (exitTs && Math.abs(cts - exitTs) <= 60) outIdx = idx;
+        if (entryTs && Math.abs(cts - entryTs) <= 65 && inIdx === -1) inIdx = idx;
+        if (exitTs && Math.abs(cts - exitTs) <= 65) outIdx = idx;
       });
       if (inIdx === -1) inIdx = Math.max(0, n - 8);
 
@@ -1025,19 +1030,30 @@
         const col = bull ? "#30d158" : "#ff453a";
         const yH = yOf(hiC), yL = yOf(loC);
         const yTop = yOf(Math.max(o, cl));
-        const bH = Math.max(1.8, Math.abs(yOf(o) - yOf(cl)));
-        barsSvg += `<line x1="${cx.toFixed(1)}" y1="${yH.toFixed(1)}" x2="${cx.toFixed(1)}" y2="${yL.toFixed(1)}" stroke="${col}" stroke-width="1.2" opacity="0.85"/>`;
+        const bH = Math.max(2.0, Math.abs(yOf(o) - yOf(cl)));
+        barsSvg += `<line x1="${cx.toFixed(1)}" y1="${yH.toFixed(1)}" x2="${cx.toFixed(1)}" y2="${yL.toFixed(1)}" stroke="${col}" stroke-width="1.3"/>`;
         barsSvg += `<rect x="${(cx - bodyW / 2).toFixed(1)}" y="${yTop.toFixed(1)}" width="${bodyW.toFixed(1)}" height="${bH.toFixed(1)}" rx="1.2" fill="${col}"/>`;
       });
 
+      const zoneY = Math.min(yIn, yOut);
+      const zoneH = Math.max(2, Math.abs(yOut - yIn));
+      const yInTag = Math.max(11, Math.min(h - 4, yIn + 3));
+      const yOutTag = Math.abs(yOut - yIn) < 13
+        ? Math.max(11, Math.min(h - 4, yOut + (yOut >= yIn ? 12 : -9)))
+        : Math.max(11, Math.min(h - 4, yOut + 3));
+
       return `
         <svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" style="display:block;">
-          <rect x="${Math.min(xIn, xOut).toFixed(1)}" y="2" width="${Math.max(6, Math.abs(xOut - xIn)).toFixed(1)}" height="${h - 4}" fill="${accent}" opacity="0.08" rx="4"/>
-          <line x1="${padX}" y1="${yIn.toFixed(1)}" x2="${w - padX}" y2="${yIn.toFixed(1)}" stroke="#0a84ff" stroke-dasharray="3 3" stroke-width="1" opacity="0.75"/>
-          <line x1="${padX}" y1="${yOut.toFixed(1)}" x2="${w - padX}" y2="${yOut.toFixed(1)}" stroke="${accent}" stroke-dasharray="2 3" stroke-width="1" opacity="0.65"/>
+          <rect x="${padX}" y="${zoneY.toFixed(1)}" width="${plotW.toFixed(1)}" height="${zoneH.toFixed(1)}" fill="${accent}" opacity="0.09"/>
           ${barsSvg}
-          <circle cx="${xIn.toFixed(1)}" cy="${yIn.toFixed(1)}" r="3.6" fill="#0a84ff" stroke="#000" stroke-width="1"/>
-          <circle cx="${xOut.toFixed(1)}" cy="${yOut.toFixed(1)}" r="4" fill="${accent}" stroke="#000" stroke-width="1"/>
+          <line x1="${padX}" y1="${yIn.toFixed(1)}" x2="${(w - padX).toFixed(1)}" y2="${yIn.toFixed(1)}" stroke="#0a84ff" stroke-dasharray="3 2" stroke-width="1.25"/>
+          <line x1="${padX}" y1="${yOut.toFixed(1)}" x2="${(w - padX).toFixed(1)}" y2="${yOut.toFixed(1)}" stroke="${accent}" stroke-width="1.35"/>
+          <circle cx="${xIn.toFixed(1)}" cy="${yIn.toFixed(1)}" r="3.8" fill="#0a84ff" stroke="#000" stroke-width="1.1"/>
+          <circle cx="${xOut.toFixed(1)}" cy="${yOut.toFixed(1)}" r="4.2" fill="${accent}" stroke="#000" stroke-width="1.1"/>
+          <rect x="${(w - rightLabelSpace - 4).toFixed(1)}" y="${(yInTag - 10).toFixed(1)}" width="${rightLabelSpace}" height="13" rx="3.5" fill="rgba(10,132,255,0.24)"/>
+          <text x="${(w - rightLabelSpace).toFixed(1)}" y="${yInTag.toFixed(1)}" fill="#64b5ff" font-size="9" font-weight="700" font-family="-apple-system,sans-serif">IN ${entryPx.toFixed(5)}</text>
+          <rect x="${(w - rightLabelSpace - 4).toFixed(1)}" y="${(yOutTag - 10).toFixed(1)}" width="${rightLabelSpace}" height="13" rx="3.5" fill="${isWin ? "rgba(48,209,88,0.24)" : "rgba(255,69,58,0.24)"}"/>
+          <text x="${(w - rightLabelSpace).toFixed(1)}" y="${yOutTag.toFixed(1)}" fill="${accent}" font-size="9" font-weight="700" font-family="-apple-system,sans-serif">OUT ${exitPx.toFixed(5)}</text>
         </svg>
       `;
     }
@@ -1145,7 +1161,7 @@
 
             <div class="tv-chart-box" onclick="openTradeModal(${idx})">
               <div class="tv-chart-caption">
-                <span>${hasCandles ? "TradingView M1 (" + tr.candles.length + " свечей)" : "Траектория входа/выхода"}</span>
+                <span>${hasCandles ? "TradingView M1 (" + tr.candles.length + " свечей)" : "Уровни входа и закрытия"}</span>
                 <span>${Number(tr.entry).toFixed(5)} → ${Number(tr.exit).toFixed(5)}</span>
               </div>
               ${buildTvCandleSvg(tr, 96)}
